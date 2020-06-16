@@ -1,9 +1,7 @@
 
 /*******************************************************
- * please first launch KITTIOdomTest.cpp
- * for example: rosrun vins kitti_odom_test "
-			   "~/catkin_ws/src/VINS-Fusion/config/kitti_odom/kitti_config00-02.yaml "
-			   "/media/tony-ws1/disk_D/kitti/odometry/sequences/00/
+ * please first launch KITTIOdomTest.cpp in VINS_Fusion of vins_estimator
+ *
  *******************************************************/
 
 #include <iostream>
@@ -14,26 +12,31 @@
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 #include <cv_bridge/cv_bridge.h>
-#include "estimator/estimator.h"
-#include "utility/visualization.h"
+//#include "estimator/estimator.h"
+//#include "utility/visualization.h"
 
 //#include "semMapping/SubscribeAndPublish.h"
-#include "semMapping/landmark.h"
-#include "semMapping/tracking.h"
+//#include "semMapping/landmark.h"
+#include "../include/landmark.h"
+#include "../include/tracking.h"
+#include "../include/frame.h"
+//#include "semMapping/tracking.h"
 
 //#include "detect_3d_cuboid/matrix_utils.h"
 //#include "detect_3d_cuboid/detect_3d_cuboid.h"
 //
 //#include "line_lbd/line_lbd_allclass.h"
 
-#include "semMapping/frame/frame.h"
+//#include "semMapping/frame/frame.h"
 
 #define DEBUG
 
 using namespace std;
 using namespace Eigen;
 
-Estimator estimator;
+//Estimator estimator;
+Landmark landmark;
+Tracking tracking;
 
 int main(int argc, char** argv)
 {
@@ -41,7 +44,7 @@ int main(int argc, char** argv)
     //TODO: 写成单独node形式， 最好不在vins-fusion代码中写，独立出来
 
     ros::init(argc, argv, "vins_cuboid");
-    ROS_INFO("vins_cuboid");
+    ROS_INFO("cube_vo");
     ros::NodeHandle n("~");
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
 
@@ -56,8 +59,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    Landmark landmark;
-    Tracking tracking;
+
 
 //    SubscribeAndPublish subandpub;
 //    detect_3d_cuboid detect_cuboid_obj;
@@ -69,9 +71,9 @@ int main(int argc, char** argv)
     printf("read sequence: %s\n", argv[2]);
     string dataPath = sequence + "/";
 
-    readParameters(config_file);
-    estimator.setParameter();
-    registerPub(n);
+//    readParameters(config_file);
+//    estimator.setParameter();
+//    registerPub(n);
 
     tracking.framer.setCubParameter();//set detected cuboid and line based parameters
 
