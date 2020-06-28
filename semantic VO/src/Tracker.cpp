@@ -2,8 +2,8 @@
 // Created by jixingwu on 2020/3/16.
 //
 
-#include "tracking.h"
-#include "SubscribeAndPublish.h"
+#include "Tracker.h"
+//#include "SubscribeAndPublish.h"
 
 
 
@@ -16,30 +16,55 @@
 using namespace std;
 using namespace Eigen;
 
-queue<darknet_ros_msgs::BoundingBoxes> keyframe_bboxes_buf;
-queue<darknet_ros_msgs::BoundingBoxes> frame_bboxes_buf;
-std::mutex m_buf;
+Tracking::Tracking() {
 
+    InitToGround = cv::Mat::eye(4, 4, CV_32F);
+    // set initial camera pose wrt ground. by default camera parallel to ground, height=1.7 (kitti)
+    double init_x, init_y, init_z, init_qx, init_qy, init_qz, init_qw;
+    n.param<double>("init_x", init_x, 0);
+    n.param<double>("init_y", init_y, 0);
+    n.param<double>("init_z", init_z, 1.7);
+    n.param<double>("init_qx", init_qx, -0.7071);
+    n.param<double>("init_qy", init_qy, 0);
+    n.param<double>("init_qz", init_qz, 0);
+    n.param<double>("init_qw", init_qw, 0.7071);
+    Eigen::Quaternionf pose_quat(init_qw, init_qx, init_qy, init_qz);
+    Eigen::Matrix3f rot = pose_quat.toRotationMatrix(); // 	The quaternion is required to be normalized
+    for (int row = 0; row < 3; row++)
+        for (int col = 0; col < 3; col++)
+            InitToGround.at<float>(row, col) = rot(row, col);
 
-void SubscribeAndPublish::keyframe_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &keyframe_bboxes)
-{
-    m_buf.lock();
-    keyframe_bboxes_buf.push(keyframe_bboxes);
-    m_buf.unlock();
+    InitToGround.at<float>(0, 3) = init_x;
+    InitToGround.at<float>(1, 3) = init_y;
+    InitToGround.at<float>(2, 3) = init_z;
+
 }
+Tracking::~Tracking() {}
 
-void SubscribeAndPublish::frame_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &frame_bboxes)
-{
-    m_buf.lock();
-    frame_bboxes_buf.push(frame_bboxes);
-    m_buf.unlock();
+
+//void SubscribeAndPublish::keyframe_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &keyframe_bboxes)
+//{
+//    m_buf.lock();
+//    keyframe_bboxes_buf.push(keyframe_bboxes);
+//    m_buf.unlock();
+//}
+//
+//void SubscribeAndPublish::frame_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &frame_bboxes)
+//{
+//    m_buf.lock();
+//    frame_bboxes_buf.push(frame_bboxes);
+//    m_buf.unlock();
+//}
+//
+//void SubscribeAndPublish::leftImage_callback(const sensor_msgs::ImageConstPtr &img_msg)
+//{}
+//
+//void SubscribeAndPublish::keyframe_image_callback(const sensor_msgs::ImageConstPtr &img_msg)
+//{}
+
+void Tracking::inputImageMsg() {
+    for(auto& msg : img_buf)
 }
-
-void SubscribeAndPublish::leftImage_callback(const sensor_msgs::ImageConstPtr &img_msg)
-{}
-
-void SubscribeAndPublish::keyframe_image_callback(const sensor_msgs::ImageConstPtr &img_msg)
-{}
 
 void Tracking::inputImage(const cv::Mat& img)
 {
@@ -210,9 +235,12 @@ double Tracking::computeError(Matrix42d keyframeCoor, Matrix42d frameCoor)
     return sqrt( pow( (d02 - d02_) ,2 ) ) / (d01 + d12 + d23 + d30 + d01_ + d12_ + d23_ + d30_);
 }
 
-void Tracking::DetectCuboid(const cv::Mat& raw_image)
+void Tracking::DetectCuboid(const cv::Mat& raw_image)// get 'Keyframe *pKF' from vins_fusion, also a signal image
 {
     cv::Mat pop_pose_to_ground;
+    std::vector<ObjectSet> all_obj_cubes;
+    std::vector<double> all_box_confidence;
+    std::vector<int> truth_tracklet_ids;
 
     std::vector<Vector4d> good_object_bbox;
     const int bboxes_length = keyframe_bboxes.bounding_boxes.size();
@@ -221,6 +249,7 @@ void Tracking::DetectCuboid(const cv::Mat& raw_image)
     int img_width = raw_image.cols;
     int img_length = raw_image.rows;
 
+    // remove some 2d bboxes too close to boundary
     int boundary_threshold = 20;
     int count = 0;
     for (auto & bounding_boxes : keyframe_bboxes.bounding_boxes)
@@ -246,9 +275,10 @@ void Tracking::DetectCuboid(const cv::Mat& raw_image)
         count++;
     }
 
-    line_lbd_obj = framer.line_lbd_obj;
-    detect_cuboid_obj = framer.detect_cuboid_obj;
+//    line_lbd_obj.detect_filter_lines(raw_image, all)
+//    detect_cuboid_obj = framer.detect_cuboid_obj;
 
+    // edge detection
     cv::Mat all_lines_mat;
     line_lbd_obj.detect_filter_lines(raw_image, all_lines_mat);
     Eigen::MatrixXd all_lines_raw(all_lines_mat.rows, 4);
@@ -258,8 +288,12 @@ void Tracking::DetectCuboid(const cv::Mat& raw_image)
         }
     }
 
-    //TODO transToGround 解决raw_image的pose问题
-    detect_cuboid_obj.detect_cuboid(raw_image, cam_transToGround, all_object_coor, all_lines_raw, frames_cuboid);
+    cv::Mat frame_pose_to_init;// get vins fusion camera pose inverse
+
+    Eigen::Matrix4f cam_transToGround = Converter::to
+
+    // TODO: transToGround 解决raw_image的pose问题
+    detect_cuboid_obj->detect_cuboid(raw_image, InitToGround, all_object_coor, all_lines_raw, frames_cuboid);
 
 }
 

@@ -2,7 +2,7 @@
 // Created by jixingwu on 2020/4/1.
 //
 
-#include "frame.h"
+#include "Frame.h"
 
 Point2f frame::pixel2cam(const Point2d& p, const Mat& K)
 {

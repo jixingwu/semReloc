@@ -10,16 +10,16 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 
-#include "../matchBBoxes/GraphMatching.h"
+#include "GraphMatching.h"
 
-#include "../../detect_3d_cuboid/matrix_utils.h"
-#include "../../detect_3d_cuboid/detect_3d_cuboid.h"
+#include "detect_3d_cuboid/matrix_utils.h"
+#include "detect_3d_cuboid/detect_3d_cuboid.h"
 
-#include "../../line_lbd/line_lbd_allclass.h"
+#include "line_lbd/line_lbd_allclass.h"
 using namespace std;
 using namespace cv;
 
-class frame
+class Frame
 {
 public:
 
@@ -29,8 +29,8 @@ public:
             0, 529.5000, 265.0000,
             0, 0, 1.0000);
 
-    frame()= default;
-    ~frame()= default;
+    Frame()= default;
+    ~Frame()= default;
     //tra
     void triangulation (
             const vector<Point2f>& points1,

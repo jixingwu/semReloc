@@ -61,12 +61,12 @@ add_library(cube_vo_lib
         src/line_lbd/line_lbd_allclass.cpp
         src/line_lbd/lsd.cpp
         src/line_lbd/LSDDetector.cpp
-        src/semMapping/frame.cpp
-        src/semMapping/landmark.cpp
-        src/semMapping/map.cpp
-        src/semMapping/map_drawer.cpp
-        src/semMapping/TopoMetric.cpp
-        src/semMapping/tracking.cpp
+        src/Frame.cpp
+        src/landmark.cpp
+        src/map.cpp
+        src/map_drawer.cpp
+        src/TopoMetric.cpp
+        src/Tracker.cpp
     )
 
 target_link_libraries(cube_vo_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} ${G2O_LIBRARIES})
@@ -81,6 +81,6 @@ target_link_libraries(cube_vo_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIB
 #add_executable(kitti_gps_test src/KITTIGPSTest.cpp)
 #target_link_libraries(kitti_gps_test vins_lib)
 
-add_executable(kitti_cub_test src/KITTICubTest.cpp)
-target_link_libraries(kitti_cub_test cube_vo_lib)
+add_executable(cube_vo_test src/cube_vo_node.cpp)
+target_link_libraries(cube_vo_test cube_vo_lib)
 
