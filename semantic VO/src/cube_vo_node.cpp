@@ -53,12 +53,13 @@ int main(int argc, char** argv)
 
     // TODO all topics used
     // [A] camera pose
-    string camera_pose_topic = string("/vins_estimator/camera_pose");
+    string camera_pose_topic = string("/vins_estimator/camera_pose");// '/camera_pose'
     ROS_INFO("[VO] Subscribe to camera_pose_topic: %s", camera_pose_topic.c_str());
     ros::Subscriber sub_camera_pose = nh.subscribe(camera_pose_topic, 1000, &DataManager::camera_pose_callback, &dataManager );
 
+
     // Raw left and right images
-    string left_image_topic = string("/left_image_topic");
+    string left_image_topic = string("/left_image_topic");// 'image_track'
     ROS_INFO("[VO] Subscribe to left_image_topic: %s", left_image_topic.c_str());
     ros::Subscriber sub_left_image = nh.subscribe(left_image_topic, 1000, &DataManager::leftImage_callback, &dataManager);
     string right_image_topic = string("/right_image_topic");
@@ -69,6 +70,11 @@ int main(int argc, char** argv)
     string keyframe_image_topic = string("/keyframe_image_topic");
     ROS_INFO("[VO] Subscribe to keyframe_image_topic: %s", keyframe_image_topic.c_str());
     ros::Subscriber sub_keyframe_image = nh.subscribe(keyframe_image_topic, 1000, &DataManager::keyframe_image_callback, &dataManager);
+
+    // keyframe camera pose
+    string keyframe_pose_topic = string("/keyframe_pose");
+    ROS_INFO("[VO] Subscribe to keyframe_pose_topic: %s", keyframe_pose_topic.c_str());
+    ros::Subscriber sub_keyframe_pose = nh.subscribe(keyframe_pose_topic, 1000, &DataManager::keyframe_pose_callback, &dataManager);
 
     // Bboxes of keyframe image from darknet_ros yolov3
     string keyframe_bboxes_topic = string("/keyframe_bboxes_topic");
@@ -82,6 +88,8 @@ int main(int argc, char** argv)
 
     //------------------------------- sub topics Finished ------------------------------------//
     // TODO pub all **CUBES** including keyframes and frames image
+
+    // TODO: sub的img and keyframe_camera_pose放在DataManager中 然后放到Frame类中做 Detect Cube
 
 
 #ifdef DEBUG

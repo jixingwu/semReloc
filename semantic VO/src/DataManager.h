@@ -53,11 +53,13 @@ public:
     void leftImage_callback(const sensor_msgs::ImageConstPtr &msg);
     void rightImage_callback(const sensor_msgs::ImageConstPtr &msg);// Not sure whether this will be used
     void keyframe_image_callback(const sensor_msgs::ImageConstPtr &msg);
+    void keyframe_pose_callback(const nav_msgs::Odometry &msg);
     void keyframe_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &msg);
     void frame_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &msg);
 
 private:
     queue<nav_msgs::Odometry> pose_buf;
+    queue<nav_msgs::Odometry> keypose_buf;
     queue<darknet_ros_msgs::BoundingBoxes> keyframe_bboxes_buf;
     queue<darknet_ros_msgs::BoundingBoxes> frame_bboxes_buf;
     queue<sensor_msgs::ImageConstPtr> img_buf;
@@ -72,6 +74,7 @@ public:
 
 public:
     queue<nav_msgs::Odometry> getCameraPose(){ return pose_buf; }
+    queue<nav_msgs::Odometry> getKeyframePose(){ return keypose_buf; }
     queue<darknet_ros_msgs::BoundingBoxes> getKeyframeBboxes(){return keyframe_bboxes_buf;}
     queue<darknet_ros_msgs::BoundingBoxes> getFrameBboxes(){return frame_bboxes_buf;}
     queue<sensor_msgs::ImageConstPtr> getFrameImage(){ return img_buf; }

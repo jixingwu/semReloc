@@ -63,3 +63,13 @@ void DataManager::keyframe_image_callback(const sensor_msgs::ImageConstPtr &msg)
     m_buf.unlock();
     return;
 }
+
+void DataManager::keyframe_pose_callback(const nav_msgs::Odometry &msg){
+    m_buf.lock();
+    __DATAMANAGER_CALLBACK_PRINT__(
+            cout << TermColor::iBLUE() << "[DataManager/keyframe_pose_callback]"
+                 << msg->header.stamp << "\t" << msg->header.stamp - pose_0 << TermColor::RESET() << endl;)
+    keypose_buf.push(msg);
+    m_buf.unlock();
+    return;
+}
