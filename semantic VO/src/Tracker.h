@@ -29,10 +29,13 @@
 #include "GraphMatching.h"
 #include "DataManager.h"
 #include "Frame.h"
-//#include "../../../VINS-Fusion/vins_estimator/src/semMapping/frame/frame.h"
+#include "Converter.h"
+
+#include "Thirdparty/g2o/g2o_"
 
 typedef Eigen::Matrix<double, 3, 8> Matrix38d;
 typedef Eigen::Matrix<double, 4, 2> Matrix42d;
+typedef Eigen::Matrix<double, 9, 1> Vector9d;
 
 
 class Tracking
@@ -70,7 +73,7 @@ public:
     cv::Mat InitToGround;//    Eigen::Matrix4d cam_transToGround;
     Eigen::Matrix3d Kalib;
 
-    void DetectCuboid(const cv::Mat& raw_image);
+    void DetectCuboid(const cv::Mat& raw_image, cv::Mat camera_pose);
     void AssociateCuboid();
     bool MatchCuboid(darknet_ros_msgs::BoundingBoxes keyframe_bboxes, darknet_ros_msgs::BoundingBoxes frame_bboxes);//keyframe_bboxes, frame_bboxes;
 
@@ -85,7 +88,6 @@ public:
 
     bool whether_save_online_detected_cuboids;
     bool whether_save_final_optimized_cuboids;
-
 
 };
 

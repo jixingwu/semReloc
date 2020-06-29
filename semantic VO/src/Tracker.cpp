@@ -235,7 +235,7 @@ double Tracking::computeError(Matrix42d keyframeCoor, Matrix42d frameCoor)
     return sqrt( pow( (d02 - d02_) ,2 ) ) / (d01 + d12 + d23 + d30 + d01_ + d12_ + d23_ + d30_);
 }
 
-void Tracking::DetectCuboid(const cv::Mat& raw_image)// get 'Keyframe *pKF' from vins_fusion, also a signal image
+void Tracking::DetectCuboid(const cv::Mat& raw_image, cv::Mat camera_pose)// get 'Keyframe *pKF' from vins_fusion, also a signal image
 {
     cv::Mat pop_pose_to_ground;
     std::vector<ObjectSet> all_obj_cubes;
@@ -288,13 +288,27 @@ void Tracking::DetectCuboid(const cv::Mat& raw_image)// get 'Keyframe *pKF' from
         }
     }
 
-    cv::Mat frame_pose_to_init;// get vins fusion camera pose inverse
+//    cv::Mat frame_pose_to_init;// get vins fusion camera pose inverse
+    cv::Mat frame_pose_to_ground = camera_pose;
+    frame_pose_to_ground = InitToGround * frame_pose_to_ground;
 
-    Eigen::Matrix4f cam_transToGround = Converter::to
+    Eigen::Matrix4f cam_transToGround = Converter::toMatrix4f(frame_pose_to_ground);
 
     // TODO: transToGround 解决raw_image的pose问题
-    detect_cuboid_obj->detect_cuboid(raw_image, InitToGround, all_object_coor, all_lines_raw, frames_cuboid);
+    detect_cuboid_obj->detect_cuboid(raw_image, cam_transToGround.cast<double>(), all_object_coor, all_lines_raw, frames_cuboid);
 
+    g2o::SE3Quat frame_pose_to_init = Converter::toSE3Quat(camera_pose);
+    g2o::SE3Quat InitToGround_se3 = Converter::toSE3Quat(InitToGround);
+
+    for (int ii = 0; ii < (int)frames_cuboid.size(); ++ii)
+    {
+        if(frames_cuboid[ii].size() > 0)
+        {
+            cuboid *raw_cuboid = frames_cuboid[ii][0];
+            g2o::cuboid cube_ground_value;// [x y z yaw l w h]
+            Vector9d
+        }
+    }
 }
 
 //// one cuboid need front and back markers...
