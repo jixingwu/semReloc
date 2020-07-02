@@ -21,13 +21,17 @@ using namespace cv;
 
 class Frame
 {
-public:
+private:
 
     //相机内参, KITTI
     Mat K = ( Mat_<double> (3,3) <<
             529.5000, 0, 365.0000,
             0, 529.5000, 265.0000,
             0, 0, 1.0000);
+    detect_3d_cuboid detect_cuboid_obj;
+    line_lbd_detect line_lbd_obj;
+
+public:
 
     Frame()= default;
     ~Frame()= default;
@@ -46,9 +50,9 @@ public:
     Point2f pixel2cam(const Point2d& p, const Mat& K);
 
     void setCubParameter();
+    cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp, int msg_seq_id=-1);
 
-    detect_3d_cuboid detect_cuboid_obj;
-    line_lbd_detect line_lbd_obj;
+
 };
 
 //class BboxMatching : public GraphMatching

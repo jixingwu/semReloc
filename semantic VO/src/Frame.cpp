@@ -4,7 +4,7 @@
 
 #include "Frame.h"
 
-Point2f frame::pixel2cam(const Point2d& p, const Mat& K)
+Point2f Frame::pixel2cam(const Point2d& p, const Mat& K)
 {
     return Point2f
             (
@@ -13,7 +13,7 @@ Point2f frame::pixel2cam(const Point2d& p, const Mat& K)
                     );
 }
 
-void frame::triangulation(
+void Frame::triangulation(
         const vector<Point2f>& points1,
         const vector<Point2f>& points2,
         const cv::Mat &R, const cv::Mat &t,
@@ -56,7 +56,7 @@ void frame::triangulation(
     //-- 验证三角化点与特征点的重投影关系
 }
 
-void frame::pose_estimation_2d2d(
+void Frame::pose_estimation_2d2d(
         const vector<Point2f>& points1,
         const vector<Point2f>& points2,
         Mat &R, Mat &t)
@@ -85,7 +85,7 @@ void frame::pose_estimation_2d2d(
 
 }
 
-void frame::setCubParameter() {
+void Frame::setCubParameter() {
 
     //set detector parameters
     Eigen::Matrix3d calib;

@@ -31,11 +31,11 @@
 #include "Frame.h"
 #include "Converter.h"
 
-#include "Thirdparty/g2o/g2o_"
+#include "g2o_Object.h"
 
 typedef Eigen::Matrix<double, 3, 8> Matrix38d;
 typedef Eigen::Matrix<double, 4, 2> Matrix42d;
-typedef Eigen::Matrix<double, 9, 1> Vector9d;
+//typedef Eigen::Matrix<double, 9, 1> Vector9d;
 
 
 class Tracking
