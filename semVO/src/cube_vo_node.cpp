@@ -88,8 +88,13 @@ int main(int argc, char** argv)
 
     //------------------------------- sub topics Finished ------------------------------------//
     // TODO pub all **CUBES** including keyframes and frames image
+    string pub_cube_makers = "/cube_makers";
+    ROS_INFO("main: Publisher pub_cube_makers: %s", pub_cube_makers.c_str());
+    ros::Publisher cube_makers_pub = nh.advertise<visualization_msgs::MarkerArray>(pub_cube_makers, 1000);
+
 
     // TODO: sub的img and keyframe_camera_pose放在DataManager中 然后放到Frame类中做 Detect Cube
+    // TODO: input one-bye-one image to tracking()
 
 
 #ifdef DEBUG

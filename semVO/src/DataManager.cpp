@@ -8,6 +8,7 @@ DataManager::DataManager(ros::NodeHandle &nh)
 {
     this->nh = nh;
 }
+DataManager::DataManager(){}
 
 #define __DATAMANAGER_CALLBACK_PRINT__(msg)
 
@@ -72,4 +73,13 @@ void DataManager::keyframe_pose_callback(const nav_msgs::Odometry &msg){
     keypose_buf.push(msg);
     m_buf.unlock();
     return;
+}
+
+bool DataManager::isCubeMakersPublisherPubSet() const {
+    return (bool)is_cube_makers_set;
+}
+
+void DataManager::setCubeMakerPublisher(ros::Publisher &cube_makers) {
+    cube_makers_pub = cube_makers;
+    is_cube_makers_set = true;
 }

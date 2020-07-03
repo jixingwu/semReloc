@@ -39,6 +39,7 @@ class DataManager
 {
 public:
     DataManager(ros::NodeHandle &nh);
+    DataManager();
 
     bool isPose0Avaliable() const {return pose_0_available;}
 
@@ -56,6 +57,15 @@ public:
     void keyframe_pose_callback(const nav_msgs::Odometry &msg);
     void keyframe_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &msg);
     void frame_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &msg);
+
+public:
+    // ---------------------- publisher ------------------------//
+    bool isCubeMakersPublisherPubSet() const;
+    void setCubeMakerPublisher(ros::Publisher& pub);
+    ros::Publisher cube_makers_pub;
+
+private:
+    bool is_cube_makers_set = false;
 
 private:
     queue<nav_msgs::Odometry> pose_buf;

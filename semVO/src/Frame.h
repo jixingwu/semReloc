@@ -21,7 +21,7 @@ using namespace cv;
 
 class Frame
 {
-private:
+public:
 
     //相机内参, KITTI
     Mat K = ( Mat_<double> (3,3) <<
@@ -50,7 +50,7 @@ public:
     Point2f pixel2cam(const Point2d& p, const Mat& K);
 
     void setCubParameter();
-    cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp, int msg_seq_id=-1);
+
 
 
 };

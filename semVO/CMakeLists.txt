@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
     nav_msgs
     tf
     cv_bridge
-    camera_models
+    #camera_models
     image_transport
     darknet_ros_msgs
         )
@@ -43,7 +43,7 @@ catkin_package(
         std_msgs
         geometry_msgs
         nav_msgs
-        camera_models
+        #camera_models
         image_transport
         darknet_ros_msgs
         tf

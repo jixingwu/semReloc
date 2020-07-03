@@ -24,8 +24,8 @@ find_package(OpenCV 3 REQUIRED)
 
 # Removing the dependence on theia for the production code.
 # If you want to compile unit tests, some of those need theia-sfm as dependence.
-find_package(Theia REQUIRED)
-include_directories(${THEIA_INCLUDE_DIRS})
+#find_package(Theia REQUIRED)
+#include_directories(${THEIA_INCLUDE_DIRS})
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options system)
 include_directories(${Boost_INCLUDE_DIRS})

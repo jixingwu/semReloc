@@ -38,51 +38,78 @@ Tracking::Tracking() {
     InitToGround.at<float>(1, 3) = init_y;
     InitToGround.at<float>(2, 3) = init_z;
 
+    Kalib << 529.5000, 0, 365.0000,
+            0, 529.5000, 265.0000,
+            0, 0, 1.0000;// fx fy cx cy
+
+    detect_cuboid_obj = new detect_3d_cuboid();
+    detect_cuboid_obj->print_details = false;
+    detect_cuboid_obj->set_calibration(Kalib);
+
+    // TODO: truth cam poses?
+
 }
 Tracking::~Tracking() {}
 
+#define __TRACK_DEBUG_PRINT__(msg);
 
-//void SubscribeAndPublish::keyframe_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &keyframe_bboxes)
-//{
-//    m_buf.lock();
-//    keyframe_bboxes_buf.push(keyframe_bboxes);
-//    m_buf.unlock();
-//}
-//
-//void SubscribeAndPublish::frame_bboxes_callback(const darknet_ros_msgs::BoundingBoxes &frame_bboxes)
-//{
-//    m_buf.lock();
-//    frame_bboxes_buf.push(frame_bboxes);
-//    m_buf.unlock();
-//}
-//
-//void SubscribeAndPublish::leftImage_callback(const sensor_msgs::ImageConstPtr &img_msg)
-//{}
-//
-//void SubscribeAndPublish::keyframe_image_callback(const sensor_msgs::ImageConstPtr &img_msg)
-//{}
+void Tracking::Track() {// 有sub vins_estiamtor 的tracked_image topics 因此无需init
+    // 假设已经初始化完成
+    queue<sensor_msgs::ImageConstPtr> key_buf = keyimg_buf;
+    if(!key_buf.empty()){
+        __TRACK_DEBUG_PRINT__(cout<<"[Tracking/Track()] Keyframe image of size: %d"<< keyimg_buf.size() << endl;)
+    }
+    while(key_buf.size() > 0){
+        sensor_msgs::ImageConstPtr img_msg = key_buf.front();
+        key_buf.pop();
+        img_t = img_msg->header.stamp;
+        __TRACK_DEBUG_PRINT__(cout<<"[Tracking/Track()] poped() raw image t="<< img_msg->header.stamp << "#######> ie." << endl;)
+        cv::Mat img = setImageFromMsg(img_msg);
+        CreateNewKeyFrame(img, img_msg->header.seq);
+    }
+
+
+
+
+}
+
+cv::Mat Tracking::setImageFromMsg(const sensor_msgs::ImageConstPtr msg) {
+    auto tmp = cv_bridge::toCvShare(msg, "bgr8")->image;
+    cv::Mat image = tmp.clone();
+    assert( image.rows>0 && image.cols>0 && !image.empty() && "In Tracking::setImageFromMsg image that is being set from sensor_msgs::ImageConstPtr is invalid");
+    return image;
+}
+
+void Tracking::CreateNewKeyFrame(cv::Mat img, uint32_t imgID) {
+    // output in terminal imageId
+//    queue<sensor_msgs::ImageConstPtr>
+    __TRACK_DEBUG_PRINT__(cout<<"[Tracking/CreateNewKeyFrame()] imageID = "<< imgID << "#######> ie." << endl;)
+    // whether detect object
+    DetectCuboid(img);// TODO: fix DetectCuboid()
+}
+
 
 void Tracking::inputImageMsg() {
-    for(auto& msg : img_buf)
+    //for(auto& msg : img_buf)
 }
 
 void Tracking::inputImage(const cv::Mat& img)
 {
-    cv::Mat raw_img = img.clone();
-    m_buf.lock();
-    if(!keyframe_bboxes_buf.empty() && !frame_bboxes_buf.empty())
-    {
-        keyframe_bboxes = keyframe_bboxes_buf.front();
-        frame_bboxes = frame_bboxes_buf.front();
-        keyframe_bboxes_buf.pop();
-        frame_bboxes_buf.pop();
-
-        DetectCuboid(raw_img);
-        MatchCuboid(keyframe_bboxes, frame_bboxes);
-        if(frame_bboxes_buf.size() >= 2)
-            inputFrameBboxes2trian(frame_bboxes, frame_bboxes_buf.front());
-    }
-    m_buf.unlock();
+//    cv::Mat raw_img = img.clone();
+//    m_buf.lock();
+//    if(!keyframe_bboxes_buf.empty() && !frame_bboxes_buf.empty())
+//    {
+//        keyframe_bboxes = keyframe_bboxes_buf.front();
+//        frame_bboxes = frame_bboxes_buf.front();
+//        keyframe_bboxes_buf.pop();
+//        frame_bboxes_buf.pop();
+//
+//        DetectCuboid(raw_img);
+//        MatchCuboid(keyframe_bboxes, frame_bboxes);
+//        if(frame_bboxes_buf.size() >= 2)
+//            inputFrameBboxes2trian(frame_bboxes, frame_bboxes_buf.front());
+//    }
+//    m_buf.unlock();
 
 }
 
@@ -143,7 +170,7 @@ void Tracking::bboxes2CenterPpoints2f(darknet_ros_msgs::BoundingBoxes frame_bbox
 
 void Tracking::inputCamPose(Eigen::Matrix4d cam_pose)
 {
-    cam_transToGround = cam_pose;
+    //cam_transToGround = cam_pose;
 }
 
 bool Tracking::MatchCuboid(darknet_ros_msgs::BoundingBoxes keyframe_bboxes, darknet_ros_msgs::BoundingBoxes frame_bboxes)
@@ -300,68 +327,102 @@ void Tracking::DetectCuboid(const cv::Mat& raw_image, cv::Mat camera_pose)// get
     g2o::SE3Quat frame_pose_to_init = Converter::toSE3Quat(camera_pose);
     g2o::SE3Quat InitToGround_se3 = Converter::toSE3Quat(InitToGround);
 
-    for (int ii = 0; ii < (int)frames_cuboid.size(); ++ii)
+    g2o::cuboid cube_local_meas;
+//    g2o::SE3Quat curr_cam_pose_Twc = Converter::toSE3Quat();
+
+    has_detected_cuboid = !frames_cuboid.empty();
+    if(has_detected_cuboid)
     {
-        if(frames_cuboid[ii].size() > 0)
+        for (int ii = 0; ii < (int)frames_cuboid.size(); ++ii)
         {
+
             cuboid *raw_cuboid = frames_cuboid[ii][0];
             g2o::cuboid cube_ground_value;// [x y z yaw l w h]
             Vector9d cube_pose;
             cube_pose << raw_cuboid->pos[0], raw_cuboid->pos[1], raw_cuboid->pos[2], 0, 0, raw_cuboid->rotY,
             raw_cuboid->scale[0], raw_cuboid->scale[1], raw_cuboid->scale[2];
             cube_ground_value.fromMinimalVector(cube_pose);
+//            cube_local_meas = cube_ground_value.transform_to()
 
-            // TODO pub frames_cuboid
+            // TODO pub frames_cuboid###########################################################33
+            // MakerArray.size() = frames_cuboid.size * 2
+            visualization_msgs::MarkerArray frame_long_markers;
+            visualization_msgs::MarkerArray frame_markers;
+            std::vector<object_landmark*> cube_pose_raw_detected_history(frames_cuboid[ii].size(), nullptr);
 
-            // measurement in local frame! important
+            for (int jj = 0; jj < frames_cuboid[ii].size(); ++jj) {
+//                cuboid *raw_cuboid = frames_cuboid[ii][jj];
+//                frame_markers = cuboids_to_marker(raw_cuboid, Vector3d(0,0,1));// return MakerArray.size()=2
+//                for frame_long_markers = [frame_markers, frame_markers, ...]
+                object_landmark *tempcuboids2 = new object_landmark();
+                tempcuboids2->cube_vertex = new g2o::VertexCuboid();
+
+            }
+
+            dataManager.cube_makers_pub(frame_long_markers);
+
+                // measurement in local frame! important
 
 
         }
     }
 }
 
-// one cuboid need front and back markers...
-void cuboid_corner_to_marker(const Matrix38d& cube_corners, visualization_msgs::Marker& marker, int bodyOrfront)
-{
-    Eigen::VectorXd edge_pt_ids;
-    if (bodyOrfront==0) { // body edges
-        edge_pt_ids.resize(16); edge_pt_ids<<1,2,3,4,1,5,6,7,8,5,6,2,3,7,8,4;edge_pt_ids.array()-=1;
-    }else { // front face edges
-        edge_pt_ids.resize(5); edge_pt_ids<<1,2,6,5,1;edge_pt_ids.array()-=1;
-    }
-    marker.points.resize(edge_pt_ids.rows());
-    for (int pt_id=0; pt_id<edge_pt_ids.rows(); pt_id++)
-    {
-        marker.points[pt_id].x = cube_corners(0, edge_pt_ids(pt_id));
-        marker.points[pt_id].y = cube_corners(1, edge_pt_ids(pt_id));
-        marker.points[pt_id].z = cube_corners(2, edge_pt_ids(pt_id));
-    }
-}
+visualization_msgs::MarkerArray Tracking::cuboids_to_marker(cuboid *raw_cuboid, Vector3d rgbcolor) {
+    visualization_msgs::MarkerArray plane_markers; visualization_msgs::Marker marker;
+    if (raw_cuboid == nullptr) return plane_markers;
 
-// one cuboid need front and back markers...  rgbcolor is 0-1 based
-visualization_msgs::MarkerArray cuboids_to_marker(object_landmark* obj_landmark, Vector3d rgbcolor)
-{
-    visualization_msgs::MarkerArray plane_markers;  visualization_msgs::Marker marker;
-    if (obj_landmark==nullptr)
-        return plane_markers;
-
-    marker.header.frame_id="/cuboid";
-    marker.header.stamp=ros::Time::now();
-    marker.id = 0; //0
-    marker.type = visualization_msgs::Marker::LINE_STRIP;
-    marker.action = visualization_msgs::Marker::ADD;
+    marker.header.frame_id = "/world"; marker.header.stamp = img_t;//ros::Time::now();
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::LINE_STRIP; marker.action = visualization_msgs::Marker::ADD;
     marker.color.r = rgbcolor(0); marker.color.g = rgbcolor(1); marker.color.b = rgbcolor(2); marker.color.a = 1.0;
-    marker.scale.x = 0.02;
 
-    g2o::cuboid cube_opti = obj_landmark->cube_vertex->estimate();
-    Eigen::MatrixXd cube_corners = cube_opti.compute3D_BoxCorner();
-
-    for (int ii=0;ii<2;ii++) // each cuboid needs two markers!!! one for all edges, one for front facing edge, could with different color.
-    {
-        marker.id++;
-        cuboid_corner_to_marker(cube_corners,marker, ii);
-        plane_markers.markers.push_back(marker);
-    }
-    return plane_markers;
 }
+
+
+
+//// one cuboid need front and back markers...
+//void cuboid_corner_to_marker(const Matrix38d& cube_corners, visualization_msgs::Marker& marker, int bodyOrfront)
+//{
+//    Eigen::VectorXd edge_pt_ids;
+//    if (bodyOrfront==0) { // body edges
+//        edge_pt_ids.resize(16); edge_pt_ids<<1,2,3,4,1,5,6,7,8,5,6,2,3,7,8,4;edge_pt_ids.array()-=1;
+//    }else { // front face edges
+//        edge_pt_ids.resize(5); edge_pt_ids<<1,2,6,5,1;edge_pt_ids.array()-=1;
+//    }
+//    marker.points.resize(edge_pt_ids.rows());
+//    for (int pt_id=0; pt_id<edge_pt_ids.rows(); pt_id++)
+//    {
+//        marker.points[pt_id].x = cube_corners(0, edge_pt_ids(pt_id));
+//        marker.points[pt_id].y = cube_corners(1, edge_pt_ids(pt_id));
+//        marker.points[pt_id].z = cube_corners(2, edge_pt_ids(pt_id));
+//    }
+//}
+//
+//// one cuboid need front and back markers...  rgbcolor is 0-1 based
+//visualization_msgs::MarkerArray cuboids_to_marker(object_landmark* obj_landmark, Vector3d rgbcolor)
+//{
+//    visualization_msgs::MarkerArray plane_markers;  visualization_msgs::Marker marker;
+//    if (obj_landmark==nullptr)
+//        return plane_markers;
+//
+//    marker.header.frame_id="/cuboid";
+//    marker.header.stamp=ros::Time::now();
+//    marker.id = 0; //0
+//    marker.type = visualization_msgs::Marker::LINE_STRIP;
+//    marker.action = visualization_msgs::Marker::ADD;
+//    marker.color.r = rgbcolor(0); marker.color.g = rgbcolor(1); marker.color.b = rgbcolor(2); marker.color.a = 1.0;
+//    marker.scale.x = 0.02;
+//
+//    g2o::cuboid cube_opti = obj_landmark->cube_vertex->estimate();
+//    Eigen::MatrixXd cube_corners = cube_opti.compute3D_BoxCorner();
+//
+//    for (int ii=0;ii<2;ii++) // each cuboid needs two markers!!! one for all edges, one for front facing edge, could with different color.
+//    {
+//        marker.id++;
+//        cuboid_corner_to_marker(cube_corners,marker, ii);
+//        plane_markers.markers.push_back(marker);
+//    }
+//    return plane_markers;
+//}
 
