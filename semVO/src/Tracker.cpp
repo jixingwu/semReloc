@@ -264,7 +264,7 @@ double Tracking::computeError(Matrix42d keyframeCoor, Matrix42d frameCoor)
 
 void Tracking::DetectCuboid(const cv::Mat& raw_image, cv::Mat camera_pose)// get 'Keyframe *pKF' from vins_fusion, also a signal image
 {
-    cv::Mat pop_pose_to_ground;
+    cv::Mat pop_pose_to_ground = InitToGround;
     std::vector<ObjectSet> all_obj_cubes;
     std::vector<double> all_box_confidence;
     std::vector<int> truth_tracklet_ids;
@@ -342,22 +342,26 @@ void Tracking::DetectCuboid(const cv::Mat& raw_image, cv::Mat camera_pose)// get
             cube_pose << raw_cuboid->pos[0], raw_cuboid->pos[1], raw_cuboid->pos[2], 0, 0, raw_cuboid->rotY,
             raw_cuboid->scale[0], raw_cuboid->scale[1], raw_cuboid->scale[2];
             cube_ground_value.fromMinimalVector(cube_pose);
-//            cube_local_meas = cube_ground_value.transform_to()
 
-            // TODO pub frames_cuboid###########################################################33
+            cube_local_meas = cube_ground_value.transform_to(pop_pose_to_ground);
+
+            // TODO pub frames_cuboid###########################################################
+            //// raw_cuboid
             // MakerArray.size() = frames_cuboid.size * 2
             visualization_msgs::MarkerArray frame_long_markers;
             visualization_msgs::MarkerArray frame_markers;
             std::vector<object_landmark*> cube_pose_raw_detected_history(frames_cuboid[ii].size(), nullptr);
 
-            for (int jj = 0; jj < frames_cuboid[ii].size(); ++jj) {
+//            for (int jj = 0; jj < frames_cuboid[ii].size(); ++jj) {
 //                cuboid *raw_cuboid = frames_cuboid[ii][jj];
 //                frame_markers = cuboids_to_marker(raw_cuboid, Vector3d(0,0,1));// return MakerArray.size()=2
 //                for frame_long_markers = [frame_markers, frame_markers, ...]
-                object_landmark *tempcuboids2 = new object_landmark();
-                tempcuboids2->cube_vertex = new g2o::VertexCuboid();
-
-            }
+//                object_landmark *tempcuboids2 = new object_landmark();
+//                tempcuboids2->cube_vertex = new g2o::VertexCuboid();// ye
+//                cuboid *raw_cuboid = all_obj_cubes[ii][0];
+//                g2o::cuboid cube_ground_value;
+//                Vector
+//            }
 
             dataManager.cube_makers_pub(frame_long_markers);
 
@@ -376,6 +380,7 @@ visualization_msgs::MarkerArray Tracking::cuboids_to_marker(cuboid *raw_cuboid, 
     marker.id = 0;
     marker.type = visualization_msgs::Marker::LINE_STRIP; marker.action = visualization_msgs::Marker::ADD;
     marker.color.r = rgbcolor(0); marker.color.g = rgbcolor(1); marker.color.b = rgbcolor(2); marker.color.a = 1.0;
+    marker.scale.x = 0.02;
 
 }
 
